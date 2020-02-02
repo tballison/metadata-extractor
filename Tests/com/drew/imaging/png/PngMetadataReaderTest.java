@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 Drew Noakes
+ * Copyright 2002-2019 Drew Noakes and contributors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -100,6 +100,7 @@ public class PngMetadataReaderTest
             SimpleDateFormat formatter = new SimpleDateFormat("EE MMM DD HH:mm:ss z yyyy", Locale.US);
             formatter.setTimeZone(TimeZone.getTimeZone("GMT"));
             assertEquals("Tue Jan 01 04:08:30 GMT 2013", formatter.format(modTime));
+            assertNotNull(modTime);
             assertEquals(1357013310000L, modTime.getTime());
 
             assertEquals(PngChunkType.iTXt, dirs[5].getPngChunkType());

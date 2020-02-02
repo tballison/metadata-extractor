@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 Drew Noakes
+ * Copyright 2002-2019 Drew Noakes and contributors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -33,18 +33,21 @@ import java.nio.charset.Charset;
 /**
  * @author Drew Noakes https://drewnoakes.com
  */
+@SuppressWarnings("WeakerAccess")
 public abstract class SequentialReader
 {
     // TODO review whether the masks are needed (in both this and RandomAccessReader)
 
     private boolean _isMotorolaByteOrder = true;
 
+    public abstract long getPosition() throws IOException;
+
     /**
      * Gets the next byte in the sequence.
      *
      * @return The read byte value
      */
-    protected abstract byte getByte() throws IOException;
+    public abstract byte getByte() throws IOException;
 
     /**
      * Returns the required number of bytes from the sequence.
@@ -54,6 +57,14 @@ public abstract class SequentialReader
      */
     @NotNull
     public abstract byte[] getBytes(int count) throws IOException;
+
+    /**
+     * Retrieves bytes, writing them into a caller-provided buffer.
+     * @param buffer The array to write bytes to.
+     * @param offset The starting position within buffer to write to.
+     * @param count The number of bytes to be written.
+     */
+    public abstract void getBytes(@NotNull byte[] buffer, int offset, int count) throws IOException;
 
     /**
      * Skips forward in the sequence. If the sequence ends, an {@link EOFException} is thrown.
@@ -72,6 +83,24 @@ public abstract class SequentialReader
      * @throws IOException an error occurred reading from the underlying source.
      */
     public abstract boolean trySkip(long n) throws IOException;
+
+    /**
+     * Returns an estimate of the number of bytes that can be read (or skipped
+     * over) from this {@link SequentialReader} without blocking by the next
+     * invocation of a method for this input stream. A single read or skip of
+     * this many bytes will not block, but may read or skip fewer bytes.
+     * <p>
+     * Note that while some implementations of {@link SequentialReader} like
+     * {@link SequentialByteArrayReader} will return the total remaining number
+     * of bytes in the stream, others will not. It is never correct to use the
+     * return value of this method to allocate a buffer intended to hold all
+     * data in this stream.
+     *
+     * @return an estimate of the number of bytes that can be read (or skipped
+     *         over) from this {@link SequentialReader} without blocking or
+     *         {@code 0} when it reaches the end of the input stream.
+     */
+    public abstract int available();
 
     /**
      * Sets the endianness of this reader.
@@ -284,6 +313,13 @@ public abstract class SequentialReader
         } catch (UnsupportedEncodingException e) {
             return new String(bytes);
         }
+    }
+
+    @NotNull
+    public String getString(int bytesRequested, @NotNull Charset charset) throws IOException
+    {
+        byte[] bytes = getBytes(bytesRequested);
+        return new String(bytes, charset);
     }
 
     @NotNull

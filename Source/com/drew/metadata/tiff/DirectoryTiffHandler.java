@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 Drew Noakes
+ * Copyright 2002-2019 Drew Noakes and contributors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -23,7 +23,9 @@ package com.drew.metadata.tiff;
 import com.drew.imaging.tiff.TiffHandler;
 import com.drew.lang.Rational;
 import com.drew.lang.annotations.NotNull;
+import com.drew.lang.annotations.Nullable;
 import com.drew.metadata.Directory;
+import com.drew.metadata.ErrorDirectory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.StringValue;
 
@@ -38,20 +40,14 @@ public abstract class DirectoryTiffHandler implements TiffHandler
 {
     private final Stack<Directory> _directoryStack = new Stack<Directory>();
 
-    protected Directory _currentDirectory;
+    @Nullable private Directory _rootParentDirectory;
+    @Nullable protected Directory _currentDirectory;
     protected final Metadata _metadata;
 
-    protected DirectoryTiffHandler(Metadata metadata, Class<? extends Directory> initialDirectoryClass)
+    protected DirectoryTiffHandler(Metadata metadata, @Nullable Directory parentDirectory)
     {
         _metadata = metadata;
-        try {
-            _currentDirectory = initialDirectoryClass.newInstance();
-        } catch (InstantiationException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-        _metadata.addDirectory(_currentDirectory);
+        _rootParentDirectory = parentDirectory;
     }
 
     public void endingIFD()
@@ -61,27 +57,54 @@ public abstract class DirectoryTiffHandler implements TiffHandler
 
     protected void pushDirectory(@NotNull Class<? extends Directory> directoryClass)
     {
-        _directoryStack.push(_currentDirectory);
+        Directory newDirectory;
+
         try {
-            Directory newDirectory = directoryClass.newInstance();
-            newDirectory.setParent(_currentDirectory);
-            _currentDirectory = newDirectory;
+            newDirectory = directoryClass.newInstance();
         } catch (InstantiationException e) {
             throw new RuntimeException(e);
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
+
+        // If this is the first directory, don't add to the stack
+        if (_currentDirectory == null) {
+            // Apply any pending root parent to this new directory
+            if (_rootParentDirectory != null) {
+                newDirectory.setParent(_rootParentDirectory);
+                _rootParentDirectory = null;
+            }
+        }
+        else {
+            // The current directory is pushed onto the stack, and set as the new directory's parent
+            _directoryStack.push(_currentDirectory);
+            newDirectory.setParent(_currentDirectory);
+        }
+
+        _currentDirectory = newDirectory;
         _metadata.addDirectory(_currentDirectory);
     }
 
     public void warn(@NotNull String message)
     {
-        _currentDirectory.addError(message);
+        getCurrentOrErrorDirectory().addError(message);
     }
 
     public void error(@NotNull String message)
     {
-        _currentDirectory.addError(message);
+        getCurrentOrErrorDirectory().addError(message);
+    }
+
+    @NotNull
+    private Directory getCurrentOrErrorDirectory()
+    {
+        if (_currentDirectory != null)
+            return _currentDirectory;
+        ErrorDirectory error = _metadata.getFirstDirectoryOfType(ErrorDirectory.class);
+        if (error != null)
+            return error;
+        pushDirectory(ErrorDirectory.class);
+        return _currentDirectory;
     }
 
     public void setByteArray(int tagId, @NotNull byte[] bytes)

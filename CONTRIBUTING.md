@@ -1,9 +1,8 @@
 You want to contribute to _metadata-extractor_? Great!
 
-The easiest way to contribute is to provide test images for the [image database]
-(https://github.com/drewnoakes/metadata-extractor-images/wiki).
+The easiest way to contribute is to provide test images for the [image database](https://github.com/drewnoakes/metadata-extractor-images/wiki).
 
-Check the [issues list](https://github.com/drewnoakes/metadata-extractor/issues)
+Check the [issues list](https://github.com/drewnoakes/metadata-extractor-dotnet/issues)
 for tasks that need attention. If you have something else in mind, that's great too.
 If you want to have your pull request merged, it's probably best to discuss the idea on
 the mailing list first.
@@ -19,9 +18,7 @@ these guidelines will need to be amended before being accepted.
   split them out into separate PRs.
 
 * **Match the existing code style.** This include things like brace placement, indentation
-  (spaces not tabs), naming conventions and so on.
-  
-* **Use JDK 1.5.** This library has extensive backwards compatibility.
+  (spaces not tabs), and so on.
   
 * **No 'churn'.** If your IDE changes lots of code automatically, turn that feature off or
   use a more friendly IDE. If you think a wide-sweeping change should be applied to
@@ -32,3 +29,6 @@ these guidelines will need to be amended before being accepted.
 
 The goal of these guidelines is to make your contribution clearer to read and review for
 all, both now and in the future.
+
+If you're new to GitHub's pull request model, [this article](https://github.com/susam/gitpr)
+might be helpful.

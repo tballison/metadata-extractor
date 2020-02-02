@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 Drew Noakes
+ * Copyright 2002-2019 Drew Noakes and contributors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -125,7 +125,7 @@ public class SonyType1MakernoteDirectory extends Directory
     public static final int TAG_NO_PRINT = 0xFFFF;
 
     @NotNull
-    protected static final HashMap<Integer, String> _tagNameMap = new HashMap<Integer, String>();
+    private static final HashMap<Integer, String> _tagNameMap = new HashMap<Integer, String>();
 
     static
     {
@@ -141,7 +141,7 @@ public class SonyType1MakernoteDirectory extends Directory
         _tagNameMap.put(TAG_WHITE_BALANCE, "White Balance");
         _tagNameMap.put(TAG_EXTRA_INFO, "Extra Info");
 
-        _tagNameMap.put(TAG_PRINT_IMAGE_MATCHING_INFO, "Print Image Matching Info");
+        _tagNameMap.put(TAG_PRINT_IMAGE_MATCHING_INFO, "Print Image Matching (PIM) Info");
 
         _tagNameMap.put(TAG_MULTI_BURST_MODE, "Multi Burst Mode");
         _tagNameMap.put(TAG_MULTI_BURST_IMAGE_WIDTH, "Multi Burst Image Width");

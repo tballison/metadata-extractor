@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 Drew Noakes
+ * Copyright 2002-2019 Drew Noakes and contributors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -20,31 +20,39 @@
  */
 package com.drew.imaging;
 
+import com.drew.imaging.avi.AviMetadataReader;
 import com.drew.imaging.bmp.BmpMetadataReader;
+import com.drew.imaging.eps.EpsMetadataReader;
 import com.drew.imaging.gif.GifMetadataReader;
+import com.drew.imaging.heif.HeifMetadataReader;
 import com.drew.imaging.ico.IcoMetadataReader;
 import com.drew.imaging.jpeg.JpegMetadataReader;
+import com.drew.imaging.mp3.Mp3MetadataReader;
+import com.drew.imaging.mp4.Mp4MetadataReader;
+import com.drew.imaging.quicktime.QuickTimeMetadataReader;
 import com.drew.imaging.pcx.PcxMetadataReader;
 import com.drew.imaging.png.PngMetadataReader;
 import com.drew.imaging.psd.PsdMetadataReader;
 import com.drew.imaging.raf.RafMetadataReader;
 import com.drew.imaging.tiff.TiffMetadataReader;
+import com.drew.imaging.wav.WavMetadataReader;
 import com.drew.imaging.webp.WebpMetadataReader;
 import com.drew.lang.RandomAccessStreamReader;
 import com.drew.lang.StringUtil;
 import com.drew.lang.annotations.NotNull;
 import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
-import com.drew.metadata.MetadataException;
 import com.drew.metadata.Tag;
 import com.drew.metadata.exif.ExifIFD0Directory;
-import com.drew.metadata.exif.ExifThumbnailDirectory;
-import com.drew.metadata.file.FileMetadataReader;
+import com.drew.metadata.file.FileSystemMetadataReader;
+import com.drew.metadata.file.FileTypeDirectory;
+import com.drew.metadata.xmp.XmpDirectory;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * Reads metadata from any supported file format.
@@ -54,16 +62,21 @@ import java.util.Collection;
  * Parsing is then delegated to one of:
  *
  * <ul>
- *     <li>{@link JpegMetadataReader} for JPEG files</li>
- *     <li>{@link TiffMetadataReader} for TIFF and (most) RAW files</li>
- *     <li>{@link PsdMetadataReader} for Photoshop files</li>
- *     <li>{@link PngMetadataReader} for PNG files</li>
+ *     <li>{@link AviMetadataReader} for AVI files</li>
  *     <li>{@link BmpMetadataReader} for BMP files</li>
+ *     <li>{@link FileSystemMetadataReader} for metadata from the file system when a {@link File} is provided</li>
  *     <li>{@link GifMetadataReader} for GIF files</li>
  *     <li>{@link IcoMetadataReader} for ICO files</li>
+ *     <li>{@link JpegMetadataReader} for JPEG files</li>
+ *     <li>{@link Mp4MetadataReader} for MPEG-4 files</li>
  *     <li>{@link PcxMetadataReader} for PCX files</li>
- *     <li>{@link WebpMetadataReader} for WebP files</li>
+ *     <li>{@link PngMetadataReader} for PNG files</li>
+ *     <li>{@link PsdMetadataReader} for Photoshop files</li>
+ *     <li>{@link QuickTimeMetadataReader} for QuickTime files</li>
  *     <li>{@link RafMetadataReader} for RAF files</li>
+ *     <li>{@link TiffMetadataReader} for TIFF and (most) RAW files</li>
+ *     <li>{@link WavMetadataReader} for WAV files</li>
+ *     <li>{@link WebpMetadataReader} for WebP files</li>
  * </ul>
  *
  * If you know the file type you're working with, you may use one of the above processors directly.
@@ -108,42 +121,71 @@ public class ImageMetadataReader
 
         FileType fileType = FileTypeDetector.detectFileType(bufferedInputStream);
 
-        if (fileType == FileType.Jpeg)
-            return JpegMetadataReader.readMetadata(bufferedInputStream);
+        Metadata metadata = readMetadata(bufferedInputStream, streamLength, fileType);
 
-        if (fileType == FileType.Tiff ||
-            fileType == FileType.Arw ||
-            fileType == FileType.Cr2 ||
-            fileType == FileType.Nef ||
-            fileType == FileType.Orf ||
-            fileType == FileType.Rw2)
-            return TiffMetadataReader.readMetadata(new RandomAccessStreamReader(bufferedInputStream, RandomAccessStreamReader.DEFAULT_CHUNK_LENGTH, streamLength));
+        metadata.addDirectory(new FileTypeDirectory(fileType));
 
-        if (fileType == FileType.Psd)
-            return PsdMetadataReader.readMetadata(bufferedInputStream);
+        return metadata;
+    }
 
-        if (fileType == FileType.Png)
-            return PngMetadataReader.readMetadata(bufferedInputStream);
-
-        if (fileType == FileType.Bmp)
-            return BmpMetadataReader.readMetadata(bufferedInputStream);
-
-        if (fileType == FileType.Gif)
-            return GifMetadataReader.readMetadata(bufferedInputStream);
-
-        if (fileType == FileType.Ico)
-            return IcoMetadataReader.readMetadata(bufferedInputStream);
-
-        if (fileType == FileType.Pcx)
-            return PcxMetadataReader.readMetadata(bufferedInputStream);
-
-        if (fileType == FileType.Riff)
-            return WebpMetadataReader.readMetadata(bufferedInputStream);
-
-        if (fileType == FileType.Raf)
-            return RafMetadataReader.readMetadata(bufferedInputStream);
-
-        throw new ImageProcessingException("File format is not supported");
+    /**
+     * Reads metadata from an {@link InputStream} of known length and file type.
+     *
+     * @param inputStream a stream from which the file data may be read.  The stream must be positioned at the
+     *                    beginning of the file's data.
+     * @param streamLength the length of the stream, if known, otherwise -1.
+     * @param fileType the file type of the data stream.
+     * @return a populated {@link Metadata} object containing directories of tags with values and any processing errors.
+     * @throws ImageProcessingException if the file type is unknown, or for general processing errors.
+     */
+    @NotNull
+    public static Metadata readMetadata(@NotNull final InputStream inputStream, final long streamLength, final FileType fileType) throws IOException, ImageProcessingException
+    {
+        switch (fileType) {
+            case Jpeg:
+                return JpegMetadataReader.readMetadata(inputStream);
+            case Tiff:
+            case Arw:
+            case Cr2:
+            case Nef:
+            case Orf:
+            case Rw2:
+                return TiffMetadataReader.readMetadata(new RandomAccessStreamReader(inputStream, RandomAccessStreamReader.DEFAULT_CHUNK_LENGTH, streamLength));
+            case Psd:
+                return PsdMetadataReader.readMetadata(inputStream);
+            case Png:
+                return PngMetadataReader.readMetadata(inputStream);
+            case Bmp:
+                return BmpMetadataReader.readMetadata(inputStream);
+            case Gif:
+                return GifMetadataReader.readMetadata(inputStream);
+            case Ico:
+                return IcoMetadataReader.readMetadata(inputStream);
+            case Pcx:
+                return PcxMetadataReader.readMetadata(inputStream);
+            case WebP:
+                return WebpMetadataReader.readMetadata(inputStream);
+            case Raf:
+                return RafMetadataReader.readMetadata(inputStream);
+            case Avi:
+                return AviMetadataReader.readMetadata(inputStream);
+            case Wav:
+                return WavMetadataReader.readMetadata(inputStream);
+            case Mov:
+                return QuickTimeMetadataReader.readMetadata(inputStream);
+            case Mp4:
+                return Mp4MetadataReader.readMetadata(inputStream);
+            case Mp3:
+                return Mp3MetadataReader.readMetadata(inputStream);
+            case Eps:
+                return EpsMetadataReader.readMetadata(inputStream);
+            case Heif:
+                return HeifMetadataReader.readMetadata(inputStream);
+            case Unknown:
+                throw new ImageProcessingException("File format could not be determined");
+            default:
+                return new Metadata();
+        }
     }
 
     /**
@@ -163,7 +205,7 @@ public class ImageMetadataReader
         } finally {
             inputStream.close();
         }
-        new FileMetadataReader().read(file, metadata);
+        new FileSystemMetadataReader().read(file, metadata);
         return metadata;
     }
 
@@ -185,10 +227,9 @@ public class ImageMetadataReader
      *
      * @param args the command line arguments
      */
-    public static void main(@NotNull String[] args) throws MetadataException, IOException
+    public static void main(@NotNull String[] args)
     {
         Collection<String> argList = new ArrayList<String>(Arrays.asList(args));
-        boolean thumbRequested = argList.remove("-thumb");
         boolean markdownFormat = argList.remove("-markdown");
         boolean showHex = argList.remove("-hex");
 
@@ -205,7 +246,7 @@ public class ImageMetadataReader
             File file = new File(filePath);
 
             if (!markdownFormat && argList.size()>1)
-                System.out.printf("\n***** PROCESSING: %s\n%n", filePath);
+                System.out.printf("%n***** PROCESSING: %s%n%n", filePath);
 
             Metadata metadata = null;
             try {
@@ -266,19 +307,27 @@ public class ImageMetadataReader
                     }
                 }
 
+                if (directory instanceof XmpDirectory) {
+                    Map<String, String> xmpProperties = ((XmpDirectory)directory).getXmpProperties();
+                    for (Map.Entry<String, String> property : xmpProperties.entrySet()) {
+                        String key = property.getKey();
+                        String value = property.getValue();
+
+                        if (value != null && value.length() > 1024) {
+                            value = value.substring(0, 1024) + "...";
+                        }
+
+                        if (markdownFormat) {
+                            System.out.printf("%s||%s|%s%n", directoryName, key, value);
+                        } else {
+                            System.out.printf("[%s] %s = %s%n", directoryName, key, value);
+                        }
+                    }
+                }
+
                 // print out any errors
                 for (String error : directory.getErrors())
                     System.err.println("ERROR: " + error);
-            }
-
-            if (args.length > 1 && thumbRequested) {
-                ExifThumbnailDirectory directory = metadata.getFirstDirectoryOfType(ExifThumbnailDirectory.class);
-                if (directory!=null && directory.hasThumbnailData()) {
-                    System.out.println("Writing thumbnail...");
-                    directory.writeThumbnail(args[0].trim() + ".thumb.jpg");
-                } else {
-                    System.out.println("No thumbnail data exists in this image");
-                }
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 Drew Noakes
+ * Copyright 2002-2019 Drew Noakes and contributors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -41,9 +41,10 @@ import java.util.regex.Pattern;
  *
  * @author Drew Noakes https://drewnoakes.com
  */
+@java.lang.SuppressWarnings("WeakerAccess")
 public abstract class Directory
 {
-    private static final DecimalFormat _floatFormat = new DecimalFormat("0.###");
+    private static final String _floatFormatPattern = "0.###";
 
     /** Map of values hashed by type identifiers. */
     @NotNull
@@ -755,15 +756,31 @@ public abstract class Directory
         Object o = getObject(tagType);
         if (o == null)
             return null;
+        if (o instanceof Number)
+            return ((Number)o).longValue();
         if (o instanceof String || o instanceof StringValue) {
             try {
                 return Long.parseLong(o.toString());
             } catch (NumberFormatException nfe) {
                 return null;
             }
+        } else if (o instanceof Rational[]) {
+            Rational[] rationals = (Rational[])o;
+            if (rationals.length == 1)
+                return rationals[0].longValue();
+        } else if (o instanceof byte[]) {
+            byte[] bytes = (byte[])o;
+            if (bytes.length == 1)
+                return (long)bytes[0];
+        } else if (o instanceof int[]) {
+            int[] ints = (int[])o;
+            if (ints.length == 1)
+                return (long)ints[0];
+        } else if (o instanceof short[]) {
+            short[] shorts = (short[])o;
+            if (shorts.length == 1)
+                return (long)shorts[0];
         }
-        if (o instanceof Number)
-            return ((Number)o).longValue();
         return null;
     }
 
@@ -865,6 +882,7 @@ public abstract class Directory
                     "yyyy-MM-dd'T'HH:mm",
                     "yyyy-MM-dd",
                     "yyyy-MM",
+                    "yyyyMMdd", // as used in IPTC data
                     "yyyy" };
 
             String dateString = o.toString();
@@ -1006,16 +1024,20 @@ public abstract class Directory
                     string.append(Array.getLong(o, i));
                 }
             } else if (componentType.getName().equals("float")) {
+                DecimalFormat format = new DecimalFormat(_floatFormatPattern);
                 for (int i = 0; i < arrayLength; i++) {
                     if (i != 0)
                         string.append(' ');
-                    string.append(_floatFormat.format(Array.getFloat(o, i)));
+                    String s = format.format(Array.getFloat(o, i));
+                    string.append(s.equals("-0") ? "0" : s);
                 }
             } else if (componentType.getName().equals("double")) {
+                DecimalFormat format = new DecimalFormat(_floatFormatPattern);
                 for (int i = 0; i < arrayLength; i++) {
                     if (i != 0)
                         string.append(' ');
-                    string.append(_floatFormat.format(Array.getDouble(o, i)));
+                    String s = format.format(Array.getDouble(o, i));
+                    string.append(s.equals("-0") ? "0" : s);
                 }
             } else if (componentType.getName().equals("byte")) {
                 for (int i = 0; i < arrayLength; i++) {
@@ -1031,10 +1053,10 @@ public abstract class Directory
         }
 
         if (o instanceof Double)
-            return _floatFormat.format(((Double)o).doubleValue());
+            return new DecimalFormat(_floatFormatPattern).format(((Double)o).doubleValue());
 
         if (o instanceof Float)
-            return _floatFormat.format(((Float)o).floatValue());
+            return new DecimalFormat(_floatFormatPattern).format(((Float)o).floatValue());
 
         // Note that several cameras leave trailing spaces (Olympus, Nikon) but this library is intended to show
         // the actual data within the file.  It is not inconceivable that whitespace may be significant here, so we

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 Drew Noakes
+ * Copyright 2002-2019 Drew Noakes and contributors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -47,6 +47,8 @@ public abstract class RandomAccessReader
 {
     private boolean _isMotorolaByteOrder = true;
 
+    public abstract int toUnshiftedOffset(int localOffset);
+
     /**
      * Gets the byte value at the specified byte <code>index</code>.
      * <p>
@@ -59,7 +61,7 @@ public abstract class RandomAccessReader
      * @throws BufferBoundsException if the requested byte is beyond the end of the underlying data source
      * @throws IOException if the byte is unable to be read
      */
-    protected abstract byte getByte(int index) throws IOException;
+    public abstract byte getByte(int index) throws IOException;
 
     /**
      * Returns the required number of bytes from the specified index from the underlying source.
