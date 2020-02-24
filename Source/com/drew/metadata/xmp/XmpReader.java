@@ -20,13 +20,13 @@
  */
 package com.drew.metadata.xmp;
 
-import com.adobe.internal.xmp.XMPException;
-import com.adobe.internal.xmp.XMPIterator;
-import com.adobe.internal.xmp.XMPMeta;
-import com.adobe.internal.xmp.XMPMetaFactory;
-import com.adobe.internal.xmp.impl.ByteBuffer;
-import com.adobe.internal.xmp.options.ParseOptions;
-import com.adobe.internal.xmp.properties.XMPPropertyInfo;
+import com.adobe.xmp.XMPException;
+import com.adobe.xmp.XMPIterator;
+import com.adobe.xmp.XMPMeta;
+import com.adobe.xmp.XMPMetaFactory;
+import com.adobe.xmp.impl.ByteBuffer;
+import com.adobe.xmp.options.ParseOptions;
+import com.adobe.xmp.properties.XMPPropertyInfo;
 import com.drew.imaging.jpeg.JpegSegmentMetadataReader;
 import com.drew.imaging.jpeg.JpegSegmentType;
 import com.drew.lang.SequentialByteArrayReader;
@@ -65,7 +65,7 @@ public class XmpReader implements JpegSegmentMetadataReader
     private static final String SCHEMA_XMP_NOTES = "http://ns.adobe.com/xmp/note/";
     @NotNull
     private static final String ATTRIBUTE_EXTENDED_XMP = "xmpNote:HasExtendedXMP";
-    // Limit photoshop:DocumentAncestors node as it can reach over 100000 items and make parsing extremely slow. 
+    // Limit photoshop:DocumentAncestors node as it can reach over 100000 items and make parsing extremely slow.
     // This is not a typical value but it may happen https://forums.adobe.com/thread/2081839
     @NotNull
     private static final ParseOptions PARSE_OPTIONS = new ParseOptions().setXMPNodesToLimit(Collections.singletonMap("photoshop:DocumentAncestors", 1000));

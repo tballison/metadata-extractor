@@ -12,13 +12,17 @@
         <version>7</version>
     </parent>
 
-    <groupId>com.drewnoakes</groupId>
+    <groupId>org.tallison</groupId>
     <artifactId>metadata-extractor</artifactId>
     <version>2.14.0</version>
     <packaging>jar</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
-    <description>Java library for extracting EXIF, IPTC, XMP, ICC and other metadata from image and video files.</description>
+    <description>
+        This is a fork of com.drewnoakes' metadata-extractor that relocates com.adobe.internal to com.adobe.
+
+        Java library for extracting EXIF, IPTC, XMP, ICC and other metadata from image and video files.
+    </description>
 
     <url>https://drewnoakes.com/code/exif/</url>
 
@@ -27,16 +31,6 @@
         <url>https://github.com/drewnoakes/metadata-extractor/issues</url>
     </issueManagement>
 
-    <mailingLists>
-        <mailingList>
-            <name>Announce mailing list</name>
-            <archive>http://groups.google.com/group/metadata-extractor-announce</archive>
-        </mailingList>
-        <mailingList>
-            <name>Development mailing list</name>
-            <archive>http://groups.google.com/group/metadata-extractor-dev</archive>
-        </mailingList>
-    </mailingLists>
 
     <licenses>
         <license>
@@ -47,9 +41,9 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:git://github.com/drewnoakes/metadata-extractor.git</connection>
-        <developerConnection>scm:git:git@github.com:drewnoakes/metadata-extractor.git</developerConnection>
-        <url>https://github.com/drewnoakes/metadata-extractor</url>
+        <connection>scm:git:git://github.com/tballison/metadata-extractor.git</connection>
+        <developerConnection>scm:git:git@github.com:tballison/metadata-extractor.git</developerConnection>
+        <url>https://github.com/tballison/metadata-extractor</url>
     </scm>
 
     <developers>
@@ -66,9 +60,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.adobe.xmp</groupId>
-            <artifactId>xmpcore</artifactId>
-            <version>6.0.6</version>
+            <groupId>org.tallison.xmp</groupId>
+            <artifactId>xmpcore-shaded</artifactId>
+            <version>6.1.10</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -146,7 +140,7 @@
                         </manifest>
                         <manifestEntries>
                             <Implementation-Title>metadata-extractor</Implementation-Title>
-                            <Implementation-Vendor>Drew Noakes</Implementation-Vendor>
+                            <Implementation-Vendor>Tim Allison</Implementation-Vendor>
                             <Implementation-Version>${project.version}</Implementation-Version>
                         </manifestEntries>
                     </archive>
