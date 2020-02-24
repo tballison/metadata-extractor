@@ -1,8 +1,11 @@
 ![metadata-extractor logo](https://cdn.rawgit.com/drewnoakes/metadata-extractor/master/Resources/metadata-extractor-logo.svg)
 
-[![metadata-extractor build status](https://api.travis-ci.org/drewnoakes/metadata-extractor.svg)](https://travis-ci.org/drewnoakes/metadata-extractor)
-[![Maven Central](https://img.shields.io/maven-central/v/com.drewnoakes/metadata-extractor.svg?maxAge=2592000)](https://mvnrepository.com/artifact/com.drewnoakes/metadata-extractor)
+<!--[![metadata-extractor build status](https://api.travis-ci.org/drewnoakes/metadata-extractor.svg)](https://travis-ci.org/drewnoakes/metadata-extractor)-->
+[![Maven Central](https://img.shields.io/maven-central/v/org.tallison/metadata-extractor.svg?maxAge=2592000)](https://mvnrepository.com/artifact/org.tallison/metadata-extractor)
 [![Donate](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=TNXDJKCDV5Z2C&lc=GB&item_name=Drew%20Noakes&item_number=metadata%2dextractor&no_note=0&cn=Add%20a%20message%20%28optional%29%3a&no_shipping=1&currency_code=GBP&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted)
+
+**This is a fork of Drew Noakes' metadata-extractor that shade/relocates xmp-core's 'com.adobe.internal' to 'com.adobe'
+for backward compatibility.  All credit and (and paypal donations!!!) should go to [Drew Noakes](https://github.com/drewnoakes/metadata-extractor)**
 
 _metadata-extractor_ is a Java library for reading metadata from media files.
 
@@ -12,7 +15,7 @@ The easiest way is to install the library via its [Maven package](http://search.
 
 ```xml
 <dependency>
-  <groupId>com.drewnoakes</groupId>
+  <groupId>org.tallison</groupId>
   <artifactId>metadata-extractor</artifactId>
   <version>2.13.0</version>
 </dependency>
