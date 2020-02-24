@@ -36,7 +36,7 @@ compileTestJava {
 }
 
 dependencies {
-    compile 'com.adobe.xmp:xmpcore:6.0.6'
+    compile 'org.tallison.xmp:xmpcore-shaded:6.1.10'
     testCompile 'junit:junit:4.12'
 }
 
