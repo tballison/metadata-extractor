@@ -1,3 +1,11 @@
+This is a fork of Drew Noakes' metadata-extractor that enables a shim with
+the older Adobe XMP library for backwards compatibility with Apache Tika.
+
+There is no other reason to use this fork.  Please use the upstream project
+unless you have this very limited and specific need.
+
+Many, many thanks to Drew Noakes for this fantastic codebase!
+
 ![metadata-extractor logo](https://cdn.rawgit.com/drewnoakes/metadata-extractor/master/Resources/metadata-extractor-logo.svg)
 
 [![metadata-extractor build status](https://api.travis-ci.org/drewnoakes/metadata-extractor.svg)](https://travis-ci.org/drewnoakes/metadata-extractor)
@@ -12,7 +20,7 @@ The easiest way is to install the library via its [Maven package](http://search.
 
 ```xml
 <dependency>
-  <groupId>com.drewnoakes</groupId>
+  <groupId>org.tallison</groupId>
   <artifactId>metadata-extractor</artifactId>
   <version>2.14.0</version>
 </dependency>
