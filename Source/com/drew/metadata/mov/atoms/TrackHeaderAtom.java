@@ -21,26 +21,46 @@
 package com.drew.metadata.mov.atoms;
 
 import com.drew.lang.SequentialReader;
-import com.drew.metadata.mov.QuickTimeContext;
+import com.drew.metadata.mov.QuickTimeDirectory;
+import com.drew.metadata.mp4.Mp4Directory;
 
 import java.io.IOException;
 
 /**
+ * Extracts rotation information only
+ *
  * https://developer.apple.com/library/content/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-SW34
  *
- * @author Payton Garland
+ * @author Ferenc Balogh
  */
-public class MediaHeaderAtom extends FullAtom
-{
-    public MediaHeaderAtom(SequentialReader reader, Atom atom, QuickTimeContext context) throws IOException
-    {
+public class TrackHeaderAtom extends FullAtom {
+    int[] matrix = new int[9];
+    long width;
+    long height;
+
+    public TrackHeaderAtom(SequentialReader reader, Atom atom) throws IOException {
         super(reader, atom);
 
-        context.creationTime = reader.getUInt32();
-        context.modificationTime = reader.getUInt32();
-        context.timeScale = reader.getUInt32();
-        context.duration = reader.getUInt32();
-        int language = reader.getUInt16();
-        int quality = reader.getUInt16();
+        if (version == 1) {
+            reader.skip(48);
+        } else {
+            reader.skip(36);
+        }
+
+        for (int i = 0; i < 9; i++) {
+            matrix[i] = reader.getInt32();
+        }
+        width = reader.getInt32();
+        height = reader.getInt32();
+    }
+
+    public void addMetadata(QuickTimeDirectory directory) {
+        if (width != 0 && height != 0 && directory.getDoubleObject(Mp4Directory.TAG_ROTATION) == null) {
+            double x = matrix[1] + matrix[4];
+            double y = matrix[0] + matrix[3];
+            double theta = Math.atan2(y, x);
+            double degree = Math.toDegrees(theta) - 45;
+            directory.setDouble(QuickTimeDirectory.TAG_ROTATION, Math.abs(degree));
+        }
     }
 }

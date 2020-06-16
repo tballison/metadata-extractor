@@ -20,10 +20,17 @@
  */
 package com.drew.metadata.exif;
 
-import com.drew.imaging.tiff.TiffProcessingException;
-import com.drew.imaging.tiff.TiffReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 import com.drew.imaging.jpeg.JpegMetadataReader;
 import com.drew.imaging.jpeg.JpegProcessingException;
+import com.drew.imaging.tiff.TiffProcessingException;
+import com.drew.imaging.tiff.TiffReader;
 import com.drew.lang.BufferBoundsException;
 import com.drew.lang.ByteArrayReader;
 import com.drew.lang.Charsets;
@@ -40,11 +47,7 @@ import com.drew.metadata.iptc.IptcReader;
 import com.drew.metadata.photoshop.PhotoshopReader;
 import com.drew.metadata.tiff.DirectoryTiffHandler;
 import com.drew.metadata.xmp.XmpReader;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Set;
+import com.drew.metadata.plist.BplistReader;
 
 /**
  * Implementation of {@link com.drew.imaging.tiff.TiffHandler} used for handling TIFF tags according to the Exif
@@ -235,6 +238,28 @@ public class ExifTiffHandler extends DirectoryTiffHandler
             return true;
         }
 
+        // Custom processing for Apple RunTime tag
+        if (tagId == AppleMakernoteDirectory.TAG_RUN_TIME && _currentDirectory instanceof AppleMakernoteDirectory) {
+            // Read the byte array into the parent tag
+            byte[] bytes = reader.getBytes(tagOffset, byteCount);
+            _currentDirectory.setByteArray(tagId, bytes);
+
+            AppleRunTimeMakernoteDirectory directory = new AppleRunTimeMakernoteDirectory();
+            directory.setParent(_currentDirectory);
+
+            try {
+                processAppleRunTime(directory, bytes);
+
+                if (directory.getTagCount() > 0) {
+                    _metadata.addDirectory(directory);
+                }
+            } catch (IOException e) {
+                directory.addError("Error processing BPLIST: " + e.getMessage());
+            }
+
+            return true;
+        }
+
         if (handlePrintIM(_currentDirectory, tagId))
         {
             PrintIMDirectory printIMDirectory = new PrintIMDirectory();
@@ -329,6 +354,43 @@ public class ExifTiffHandler extends DirectoryTiffHandler
         }
 
         return false;
+    }
+
+    /**
+     * Process the BPLIST containing the RUN_TIME tag. The directory will only be populated with values
+     * if the <tt>flag</tt> indicates that the CMTime structure is &quot;valid&quot;.
+     *
+     * @param directory The <tt>AppleRunTimeMakernoteDirectory</tt> to set values onto.
+     * @param bplist The BPLIST
+     * @throws IOException Thrown if an error occurs parsing the BPLIST as a CMTime structure.
+     */
+    private static void processAppleRunTime(@NotNull final AppleRunTimeMakernoteDirectory directory, @NotNull final byte[] bplist) throws IOException
+    {
+        final BplistReader.PropertyListResults results = BplistReader.parse(bplist);
+
+        final Set<Map.Entry<Byte, Byte>> entrySet = results.getEntrySet();
+
+        if (entrySet != null) {
+            HashMap<String, Object> values = new HashMap<String, Object>(entrySet.size());
+
+            for (Map.Entry<Byte, Byte> entry : entrySet) {
+                String key = (String)results.getObjects().get(entry.getKey());
+                Object value = results.getObjects().get(entry.getValue());
+
+                values.put(key, value);
+            }
+
+            // https://developer.apple.com/documentation/coremedia/cmtime-u58
+
+            byte flags = (Byte)values.get("flags");
+
+            if ((flags & 0x1) == 0x1) {
+                directory.setInt(AppleRunTimeMakernoteDirectory.CMTimeFlags, flags);
+                directory.setInt(AppleRunTimeMakernoteDirectory.CMTimeEpoch, (Byte)values.get("epoch"));
+                directory.setLong(AppleRunTimeMakernoteDirectory.CMTimeScale, (Long)values.get("timescale"));
+                directory.setLong(AppleRunTimeMakernoteDirectory.CMTimeValue, (Long)values.get("value"));
+            }
+        }
     }
 
     private static void processBinary(@NotNull final Directory directory, final int tagValueOffset, @NotNull final RandomAccessReader reader, final int byteCount, final Boolean isSigned, final int arrayLength) throws IOException

@@ -29,7 +29,6 @@ import com.adobe.internal.xmp.properties.XMPPropertyInfo;
 import com.drew.imaging.FileType;
 import com.drew.imaging.FileTypeDetector;
 import com.drew.imaging.ImageMetadataReader;
-import com.drew.imaging.jpeg.JpegProcessingException;
 import com.drew.lang.StringUtil;
 import com.drew.lang.annotations.NotNull;
 import com.drew.lang.annotations.Nullable;
@@ -179,8 +178,9 @@ public class ProcessAllImagesInFolderUtility
                 "tif", "tiff", "psd", "dng",
                 "mp3",
                 "j2c", "jp2", "jpf", "jpm", "mj2",
-                "3g2", "3gp", "m4v", "mov", "mp4", "m2v", "mts",
-                "pbm", "pnm", "pgm", "ppm"));
+                "3g2", "3gp", "m4v", "mov", "mp4", "m2v", "m2ts", "mts",
+                "pbm", "pnm", "pgm", "ppm",
+                "avi"));
 
         private int _processedFileCount = 0;
         private int _exceptionCount = 0;
